@@ -22,7 +22,6 @@ export default function StudentsRequest() {
   const scrollY = useRef(new Animated.Value(0)).current;
 
   async function getMyFiles() {
-    if (!user) return;
     const result = await fetchWholeTodoListStudent();
     const myTodos = result.docs.map((d) => ({ docId: d.id, ...d.data() }));
     setData(myTodos);
@@ -30,9 +29,15 @@ export default function StudentsRequest() {
     setRefreshing(false);
   }
 
+  // useEffect(() => {
+  //   getMyFiles();
+  // }, []);
   useEffect(() => {
-    getMyFiles();
-  }, []);
+    const fetchData = async () => {
+      await getMyFiles(); // Ensure the fetch logic is executed once
+    };
+    fetchData();
+  }, []); 
 
   const onRefresh = async () => {
     setRefreshing(true);

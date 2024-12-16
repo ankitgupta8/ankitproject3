@@ -17,7 +17,6 @@ export default function TeacherRequest() {
 const [refreshing, setRefreshing] = useState(false);
   const scrollY = useRef(new Animated.Value(0)).current;
   async function getMyFiles() {
-    if (!user) return;
     const result = await fetchWholeTodoListTeacher();
     const myTodos = result.docs.map((d) => ({ docId: d.id, ...d.data() }));
     setData(myTodos);
@@ -27,8 +26,11 @@ const [refreshing, setRefreshing] = useState(false);
   }
 
   useEffect(() => {
-    getMyFiles();
-  }, []);
+    const fetchData = async () => {
+      await getMyFiles(); // Ensure the fetch logic is executed once
+    };
+    fetchData();
+  }, []); 
   const onRefresh = async () => {
     setRefreshing(true);
     await getMyFiles();
