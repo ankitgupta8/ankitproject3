@@ -17,8 +17,9 @@ workflows:
           npm install
       - name: Update Expo and related packages
         script: |
-          npm install expo@latest expo-cli@latest @expo/cli@latest
-          npx expo install --fix
+          npm install expo@latest
+          npm install --save-dev @expo/cli@latest
+          npx expo install --check
       - name: Run Expo Prebuild
         script: | 
           npx expo prebuild --clean
@@ -57,8 +58,9 @@ workflows:
           npm install
       - name: Update Expo and related packages
         script: |
-          npm install expo@latest expo-cli@latest @expo/cli@latest
-          npx expo install --fix
+          npm install expo@latest
+          npm install --save-dev @expo/cli@latest
+          npx expo install --check
       - name: Run Expo Prebuild
         script: | 
           npx expo prebuild --clean
