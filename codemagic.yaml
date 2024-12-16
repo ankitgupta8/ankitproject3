@@ -12,7 +12,11 @@ workflows:
           yarn install
       - name: Set up local properties
         script: |
+          mkdir -p android
           echo "sdk.dir=$ANDROID_SDK_ROOT" > "$CM_BUILD_DIR/android/local.properties"
+      - name: Set execute permissions for gradlew
+        script: |
+          chmod +x android/gradlew
       - name: Build Android release
         script: |
           cd android
@@ -22,4 +26,4 @@ workflows:
     publishing:
       email:
         recipients:
-          - ankit.kapilvastu@gmail.com
+          - user@example.com
