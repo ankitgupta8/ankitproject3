@@ -20,6 +20,17 @@ workflows:
           npm install expo@latest
           npm install --save-dev @expo/cli@latest
           npx expo install --check
+      - name: Install required packages
+        script: |
+          npx expo install expo-system-ui
+      - name: Check required asset files
+        script: |
+          for file in icon.png adaptive-icon.png splash.png favicon.png; do
+            if [ ! -f "./assets/$file" ]; then
+              echo "Error: $file is missing in the assets folder"
+              exit 1
+            fi
+          done
       - name: Check assets folder
         script: |
           ls -R ./assets
@@ -32,62 +43,6 @@ workflows:
           ./gradlew assembleRelease
     artifacts:
       - android/app/build/outputs/**/*.apk
-    publishing:
-      email:
-        recipients:
-          - user_1@example.com
-          - user_2@example.com
-        notify:
-          success: true
-          failure: false
-
-  react-native-ios:
-    name: React Native iOS
-    max_build_duration: 120
-    instance_type: mac_mini_m2
-    integrations:
-      app_store_connect: codemagic
-    environment:
-      ios_signing:
-        distribution_type: app_store
-        bundle_identifier: io.codemagic.sample.reactnative
-      vars:
-        BUNDLE_ID: "io.codemagic.sample.reactnative"
-        XCODE_WORKSPACE: "CodemagicSample.xcworkspace"
-        XCODE_SCHEME: "CodemagicSample"
-    scripts:
-      - name: Install npm dependencies
-        script: | 
-          npm install
-      - name: Update Expo and related packages
-        script: |
-          npm install expo@latest
-          npm install --save-dev @expo/cli@latest
-          npx expo install --check
-      - name: Check assets folder
-        script: |
-          ls -R ./assets
-      - name: Run Expo Prebuild
-        script: | 
-          npx expo prebuild --clean
-      - name: Set Info.plist values
-        script: | 
-          PLIST=$CM_BUILD_DIR/$XCODE_SCHEME/Info.plist
-          PLIST_BUDDY=/usr/libexec/PlistBuddy
-          $PLIST_BUDDY -c "Add :ITSAppUsesNonExemptEncryption bool false" $PLIST
-      - name: Install CocoaPods dependencies
-        script: | 
-          cd ios && pod install
-      - name: Build ipa for distribution
-        script: | 
-          xcode-project build-ipa \
-            --workspace "$CM_BUILD_DIR/ios/$XCODE_WORKSPACE" \
-            --scheme "$XCODE_SCHEME"
-    artifacts:
-      - build/ios/ipa/*.ipa
-      - /tmp/xcodebuild_logs/*.log
-      - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.app
-      - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.dSYM
     publishing:
       email:
         recipients:
