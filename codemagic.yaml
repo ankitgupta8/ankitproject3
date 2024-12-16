@@ -6,8 +6,6 @@ workflows:
     environment:
       android_signing:
         - keystore_reference
-      groups:
-        - google_play
       vars:
         PACKAGE_NAME: "io.codemagic.sample.reactnative"
     scripts:
@@ -24,23 +22,12 @@ workflows:
       - name: Run Expo Prebuild
         script: | 
           npx expo prebuild --clean
-      - name: Set up app/build.gradle
-        script: | 
-          mv ./support-files/build.gradle android/app
       - name: Build Android release
         script: | 
-          LATEST_GOOGLE_PLAY_BUILD_NUMBER=$(google-play get-latest-build-number --package-name "$PACKAGE_NAME")
-          if [ -z $LATEST_GOOGLE_PLAY_BUILD_NUMBER ]; then
-              UPDATED_BUILD_NUMBER=$BUILD_NUMBER
-          else
-              UPDATED_BUILD_NUMBER=$(($LATEST_GOOGLE_PLAY_BUILD_NUMBER + 1))
-          fi
           cd android
-          ./gradlew bundleRelease \
-            -PversionCode=$UPDATED_BUILD_NUMBER \
-            -PversionName=1.0.$UPDATED_BUILD_NUMBER
+          ./gradlew assembleRelease
     artifacts:
-      - android/app/build/outputs/**/*.aab
+      - android/app/build/outputs/**/*.apk
     publishing:
       email:
         recipients:
@@ -49,10 +36,6 @@ workflows:
         notify:
           success: true
           failure: false
-      google_play:
-        credentials: $GCLOUD_SERVICE_ACCOUNT_CREDENTIALS
-        track: internal
-        submit_as_draft: true
 
   react-native-ios:
     name: React Native iOS
@@ -68,14 +51,17 @@ workflows:
         BUNDLE_ID: "io.codemagic.sample.reactnative"
         XCODE_WORKSPACE: "CodemagicSample.xcworkspace"
         XCODE_SCHEME: "CodemagicSample"
-        APP_STORE_APPLE_ID: 1555555551
     scripts:
       - name: Install npm dependencies
         script: | 
           npm install
+      - name: Update Expo and related packages
+        script: |
+          npm install expo@latest expo-cli@latest @expo/cli@latest
+          npx expo install --fix
       - name: Run Expo Prebuild
         script: | 
-          npx expo prebuild
+          npx expo prebuild --clean
       - name: Set Info.plist values
         script: | 
           PLIST=$CM_BUILD_DIR/$XCODE_SCHEME/Info.plist
@@ -84,13 +70,6 @@ workflows:
       - name: Install CocoaPods dependencies
         script: | 
           cd ios && pod install
-      - name: Set up provisioning profiles settings on Xcode project
-        script: xcode-project use-profiles
-      - name: Increment build number
-        script: | 
-          cd $CM_BUILD_DIR/ios
-          LATEST_BUILD_NUMBER=$(app-store-connect get-latest-app-store-build-number "$APP_STORE_APPLE_ID")
-          agvtool new-version -all $(($LATEST_BUILD_NUMBER + 1))
       - name: Build ipa for distribution
         script: | 
           xcode-project build-ipa \
@@ -109,11 +88,4 @@ workflows:
         notify:
           success: true
           failure: false
-      app_store_connect:
-        auth: integration
-        submit_to_testflight: true
-        beta_groups:
-          - group name 1
-          - group name 2
-        submit_to_app_store: false
 
