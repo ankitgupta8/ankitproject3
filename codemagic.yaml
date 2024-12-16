@@ -20,6 +20,9 @@ workflows:
           npm install expo@latest
           npm install --save-dev @expo/cli@latest
           npx expo install --check
+      - name: Check assets folder
+        script: |
+          ls -R ./assets
       - name: Run Expo Prebuild
         script: | 
           npx expo prebuild --clean
@@ -61,6 +64,9 @@ workflows:
           npm install expo@latest
           npm install --save-dev @expo/cli@latest
           npx expo install --check
+      - name: Check assets folder
+        script: |
+          ls -R ./assets
       - name: Run Expo Prebuild
         script: | 
           npx expo prebuild --clean
@@ -90,4 +96,3 @@ workflows:
         notify:
           success: true
           failure: false
-
