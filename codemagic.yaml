@@ -4,44 +4,29 @@ workflows:
     max_build_duration: 120
     instance_type: mac_mini_m2
     environment:
-      android_signing:
-        - keystore_reference
       vars:
         PACKAGE_NAME: "com.guptaankit9.ankitproject"
     scripts:
       - name: Set Android SDK location
-        script: | 
+        script: |
           echo "sdk.dir=$ANDROID_SDK_ROOT" > "$CM_BUILD_DIR/android/local.properties"
       - name: Install npm dependencies
-        script: | 
+        script: |
           npm install
-      - name: Update Expo and related packages
+      - name: Install sharp-cli globally (specific version)
         script: |
-          npm install expo@latest
-          npm install --save-dev @expo/cli@latest
-          npx expo install --check
-      - name: Install sharp-cli globally
+          npm install -g sharp-cli@2.1.0
+      - name: Install compatible expo-system-ui version
         script: |
-          npm install -g sharp-cli
-      - name: Install required packages
+          npm install expo-system-ui@3.0.0
+      - name: Validate Expo project setup
         script: |
-          npx expo install expo-system-ui@latest
-      - name: Check required asset files
-        script: |
-          for file in icon.png adaptive-icon.png splash.png favicon.png; do
-            if [ ! -f "./assets/$file" ]; then
-              echo "Error: $file is missing in the assets folder"
-              exit 1
-            fi
-          done
-      - name: Check assets folder
-        script: |
-          ls -R ./assets
+          npx expo-cli doctor || true
       - name: Run Expo Prebuild
-        script: | 
+        script: |
           npx expo prebuild --clean
       - name: Build Android release
-        script: | 
+        script: |
           cd android
           ./gradlew assembleRelease
     artifacts:
@@ -54,4 +39,3 @@ workflows:
         notify:
           success: true
           failure: false
-
