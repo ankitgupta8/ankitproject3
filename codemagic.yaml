@@ -7,7 +7,7 @@ workflows:
       android_signing:
         - keystore_reference
       vars:
-        PACKAGE_NAME: "io.codemagic.sample.reactnative"
+        PACKAGE_NAME: "com.guptaankit9.ankitproject"
     scripts:
       - name: Set Android SDK location
         script: | 
@@ -20,9 +20,15 @@ workflows:
           npm install expo@latest
           npm install --save-dev @expo/cli@latest
           npx expo install --check
+      - name: Install sharp-cli globally
+        script: |
+          npm install -g sharp-cli
       - name: Install required packages
         script: |
-          npx expo install expo-system-ui
+          npx expo install expo-system-ui@latest
+      - name: Clear Expo cache
+        script: |
+          npx expo-cli clean
       - name: Check required asset files
         script: |
           for file in icon.png adaptive-icon.png splash.png favicon.png; do
@@ -51,3 +57,4 @@ workflows:
         notify:
           success: true
           failure: false
+
