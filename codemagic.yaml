@@ -1,0 +1,25 @@
+workflows:
+  react-native-android:
+    name: React Native Android
+    max_build_duration: 120
+    environment:
+      vars:
+        KEYSTORE_PASSWORD: "ankit@123"
+      node: latest
+    scripts:
+      - name: Install dependencies
+        script: |
+          yarn install
+      - name: Set up local properties
+        script: |
+          echo "sdk.dir=$ANDROID_SDK_ROOT" > "$CM_BUILD_DIR/android/local.properties"
+      - name: Build Android release
+        script: |
+          cd android
+          ./gradlew assembleRelease
+    artifacts:
+      - android/app/build/outputs/**/*.apk
+    publishing:
+      email:
+        recipients:
+          - ankit.kapilvastu@gmail.com
