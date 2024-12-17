@@ -16,6 +16,7 @@ interface TodoItemInterface {
   salary: string;
   phoneNumber: number;
   ownerId: string;
+  timestamp: number;
 }
 interface TodoItemInterfaceTeacher {
   name: string;
