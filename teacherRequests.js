@@ -33,7 +33,10 @@ const [refreshing, setRefreshing] = useState(false);
   }, []); 
   const onRefresh = async () => {
     setRefreshing(true);
-    await getMyFiles();
+    const fetchData = async () => {
+      await getMyFiles(); // Ensure the fetch logic is executed once
+    };
+    fetchData();
   };
 
 
