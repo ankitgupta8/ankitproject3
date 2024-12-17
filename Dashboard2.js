@@ -86,6 +86,7 @@ export default function Dashboard2({ navigation }) {
               location={e.location}
               experience={e.experience}
               subject={e.subject}
+              phoneNumber={e.phoneNumber}
             />
           ))
         ) : (
