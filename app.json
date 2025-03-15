@@ -29,8 +29,17 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-system-ui"
+      "expo-system-ui",
+      "expo-updates"
     ],
+    "updates": {
+      "enabled": true,
+      "fallbackToCacheTimeout": 0,
+      "url": "https://u.expo.dev/204352de-55c7-4155-bf20-80a75a263acd"
+    },
+    "runtimeVersion": {
+      "policy": "sdkVersion"
+    },
     "extra": {
       "eas": {
         "projectId": "204352de-55c7-4155-bf20-80a75a263acd"
