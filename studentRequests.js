@@ -1,172 +1,49 @@
-// import React, { useState, useEffect, useRef } from 'react';
-// import { View, Text, StyleSheet, Dimensions, Animated, RefreshControl } from 'react-native';
-// import { LinearGradient } from 'expo-linear-gradient';
-// import { ActivityIndicator, TextInput } from 'react-native-paper';
-// import { ScrollView } from 'react-native-gesture-handler';
-// import TutorCard from './cardComp';
-// import { fetchWholeTodoListStudent } from './firestore/read';
-// import { fetchOnLocationStudent } from './firestore/read';
-// import { auth } from './firebase';
-// import { Button } from 'react-native-paper';
-
-
-// const user = auth.currentUser;
-
-
-// export default function StudentsRequest() {
-//   const [data, setData] = useState([]);
-//   const [loading, setLoading] = useState(false);
-//   const [refreshing, setRefreshing] = useState(false);
-//   const [district, setDistrict] = useState('');
-  
-//   const scrollY = useRef(new Animated.Value(0)).current;
-
-//   async function getMyFiles() {
-//     const result = await fetchWholeTodoListStudent();
-//     const myTodos = result.docs.map((d) => ({ docId: d.id, ...d.data() }));
-//     setData(myTodos);
-//     setLoading(false);
-//     setRefreshing(false);
-//   }
-
-//   // useEffect(() => {
-//   //   getMyFiles();
-//   // }, []);
-//   useEffect(() => {
-//     const fetchData = async () => {
-//       await getMyFiles(); // Ensure the fetch logic is executed once
-//     };
-//     fetchData();
-//   }, []); 
-
-//   const onRefresh = async () => {
-//     setRefreshing(true);
-//     await getMyFiles();
-//   };
-//   async function filterDistrict(dist) {
-//     setDistrict(dist);
-//     const result = await fetchOnLocationStudent(dist);
-//     const myTodos = result.docs.map((d) => ({ docId: d.id, ...d.data() }));
-//     console.log(result.docs, dist)
-//     setData(myTodos);
-    
-//     setLoading(false);
-//     setRefreshing(false);
-//   } 
-
-
-//   return (
-//     <LinearGradient
-//       colors={['#4c669f', '#3b5998', '#192f6a']}
-//       style={{ flex: 1 }}
-//     >
-//       <Animated.ScrollView
-//         contentContainerStyle={{
-//           flexGrow: 1,
-//           justifyContent: 'center',
-//           alignItems: 'center',
-//           paddingVertical: 20,
-//         }}
-//         refreshControl={
-//                   <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-//                 }
-//                 onScroll={Animated.event(
-//                   [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-//                   { useNativeDriver: true }
-//                 )}
-//                 scrollEventThrottle={16}
-//       >
-//         <TextInput
-//               style={{
-//                 flex:0.1,
-//                 flexDirection:'row',
-//                 margin:20,
-//                 backgroundColor:'#fff',
-//                 color: '#fff',}}
-//               value={district}
-//               onChangeText={(dist) => {filterDistrict(dist)}}
-//               placeholder="District"
-//               placeholderTextColor="#a0a0a0"
-//             />
-
-//         {!loading ? (
-//           data.map((e) => (
-//             <TutorCard
-//               key={e.docId}
-//               grade={e.class}
-//               hoursToTeach={e.hoursToTeach}
-//               location={e.district}
-//               salary={e.salary}
-//               name={e.name}
-//               subject={e.subject}
-//               phoneNumber={e.phoneNumber}
-              
-//             />
-//           ))
-//         ) : (
-//           <View style={styles.loadingContainer}>
-//                       <ActivityIndicator size="large" color="#ffffff" />
-//                       <Text style={styles.loadingText}>Loading Student</Text>
-//                     </View>
-//         )}
-//       </Animated.ScrollView>
-//     </LinearGradient>
-//   );
-// }
-// const styles = StyleSheet.create({
-//   loadingContainer: {
-//     flex: 1,
-//     justifyContent: 'center',
-//     alignItems: 'center',
-//   },
-//   loadingText: {
-//     marginTop: 10,
-//     fontSize: 18,
-//     color: '#ffffff',
-//     fontWeight: 'bold',
-//   },
-// })
-
-
 import React, { useState, useEffect, useRef } from 'react';
-import { View, StyleSheet, Dimensions, Animated, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, Dimensions, Animated, RefreshControl, SafeAreaView } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { ActivityIndicator, TextInput, Text, Button, Chip } from 'react-native-paper';
+import { ActivityIndicator, Button, Chip, Portal, Modal, List, Provider as PaperProvider } from 'react-native-paper';
 import { ScrollView } from 'react-native-gesture-handler';
 import TutorCard from './cardComp';
 import { fetchWholeTodoListStudent } from './firestore/read';
-import { fetchOnLocationStudent } from './firestore/read';
 import { auth } from './firebase';
 
+const { width, height } = Dimensions.get('window');
 const user = auth.currentUser;
 
 export default function StudentsRequest() {
   const [data, setData] = useState([]);
   const [filteredData, setFilteredData] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [district, setDistrict] = useState('');
   const [sortNewest, setSortNewest] = useState(false);
-  
+  const [showLocationModal, setShowLocationModal] = useState(false);
+  const [availableLocations, setAvailableLocations] = useState([]);
   const scrollY = useRef(new Animated.Value(0)).current;
 
   async function getMyFiles() {
-    setLoading(true);
     const result = await fetchWholeTodoListStudent();
     const myTodos = result.docs.map((d) => ({ docId: d.id, ...d.data() }));
     setData(myTodos);
-    setFilteredData(myTodos);
+    
+    // Extract unique locations
+    const locations = [...new Set(myTodos.map(item => item.district))].filter(Boolean);
+    setAvailableLocations(locations);
+    
     setLoading(false);
     setRefreshing(false);
   }
 
   useEffect(() => {
-    getMyFiles();
+    const fetchData = async () => {
+      await getMyFiles();
+    };
+    fetchData();
   }, []);
 
   useEffect(() => {
     filterAndSortData();
-  }, [ district, sortNewest, data]);
+  }, [district, sortNewest, data]);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -175,20 +52,18 @@ export default function StudentsRequest() {
 
   const filterAndSortData = () => {
     let filtered = [...data];
+
     if (district) {
-      filtered = filtered.filter(item => {
-        console.log(item, "each item")
-        return item.district == district
-      }
+      filtered = filtered.filter(item => 
+        item.district === district
       );
     }
 
     if (sortNewest) {
       filtered.sort((a, b) => {
-        // Ensure that createdAt exists and has a seconds property
         const aSeconds = a.createdAt && a.createdAt.seconds ? a.createdAt.seconds : 0;
         const bSeconds = b.createdAt && b.createdAt.seconds ? b.createdAt.seconds : 0;
-        return bSeconds - aSeconds; // Sort in descending order (newest first)
+        return bSeconds - aSeconds;
       });
     }
 
@@ -199,94 +74,218 @@ export default function StudentsRequest() {
     setSortNewest(!sortNewest);
   };
 
+  const selectLocation = (location) => {
+    setDistrict(location);
+    setShowLocationModal(false);
+  };
+
+  const clearLocation = () => {
+    setDistrict('');
+  };
+
   return (
-    <LinearGradient
-      colors={['#4c669f', '#3b5998', '#192f6a']}
-      style={{ flex: 1 }}
-    >
-      <View style={styles.filterContainer}>
-        <TextInput
-          style={styles.input}
-          value={district}
-          onChangeText={setDistrict}
-          placeholder="Filter by District"
-          placeholderTextColor="#a0a0a0"
-          onSubmitEditing={filterAndSortData}
-        />
-        <Chip
-          selected={sortNewest}
-          onPress={toggleSort}
-          style={styles.chip}
+    <PaperProvider>
+      <SafeAreaView style={styles.safeArea}>
+        <LinearGradient
+          colors={['#4c669f', '#3b5998', '#192f6a']}
+          style={styles.container}
         >
-          {sortNewest ? 'Newest First' : 'Default Order'}
-        </Chip>
-      </View>
-      
-      <Animated.ScrollView
-        contentContainerStyle={styles.scrollViewContent}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
-        onScroll={Animated.event(
-          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-          { useNativeDriver: true }
-        )}
-        scrollEventThrottle={16}
-      >
-        {loading ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#ffffff" />
-            <Text style={styles.loadingText}>Loading Students</Text>
+          <View style={styles.filterContainer}>
+            <View style={styles.filterButtonContainer}>
+              <Button
+                mode="contained"
+                onPress={() => setShowLocationModal(true)}
+                style={styles.filterButton}
+                labelStyle={styles.buttonLabel}
+              >
+                {district || 'Select Location'}
+              </Button>
+              {district && (
+                <Button
+                  mode="text"
+                  onPress={clearLocation}
+                  style={styles.clearButton}
+                  textColor="#fff"
+                  labelStyle={styles.buttonLabel}
+                >
+                  Clear
+                </Button>
+              )}
+            </View>
+            <Chip
+              selected={sortNewest}
+              onPress={toggleSort}
+              style={styles.chip}
+              labelStyle={styles.chipLabel}
+            >
+              {sortNewest ? 'Newest' : 'Default'}
+            </Chip>
           </View>
-        ) : (
-          filteredData.map((e) => (
-            <TutorCard
-              key={e.docId}
-              grade={e.class}
-              hoursToTeach={e.hoursToTeach}
-              location={e.district}
-              salary={e.salary}
-              name={e.name}
-              subject={e.subject}
-              phoneNumber={e.phoneNumber}
-            />
-          ))
-        )}
-      </Animated.ScrollView>
-    </LinearGradient>
+
+          <Portal>
+            <Modal
+              visible={showLocationModal}
+              onDismiss={() => setShowLocationModal(false)}
+              contentContainerStyle={styles.modalContent}
+            >
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Select Location</Text>
+                <Button onPress={() => setShowLocationModal(false)}>Close</Button>
+              </View>
+              <ScrollView style={styles.modalScroll} contentContainerStyle={styles.modalScrollContent}>
+                {availableLocations.map((location) => (
+                  <List.Item
+                    key={location}
+                    title={location}
+                    onPress={() => selectLocation(location)}
+                    style={styles.locationItem}
+                    titleStyle={styles.locationText}
+                  />
+                ))}
+              </ScrollView>
+            </Modal>
+          </Portal>
+
+          <Animated.ScrollView
+            contentContainerStyle={styles.scrollViewContent}
+            refreshControl={
+              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+            }
+            onScroll={Animated.event(
+              [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+              { useNativeDriver: true }
+            )}
+            scrollEventThrottle={16}
+          >
+            {loading ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color="#ffffff" />
+                <Text style={styles.loadingText}>Loading Students</Text>
+              </View>
+            ) : (
+              filteredData.map((e) => (
+                <TutorCard
+                  key={e.docId}
+                  grade={e.class}
+                  hoursToTeach={e.hoursToTeach}
+                  location={e.district}
+                  salary={e.salary}
+                  name={e.name}
+                  subject={e.subject}
+                  phoneNumber={e.phoneNumber}
+                  photoURL={e.photoURL}
+                />
+              ))
+            )}
+          </Animated.ScrollView>
+        </LinearGradient>
+      </SafeAreaView>
+    </PaperProvider>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+  },
+  container: {
+    flex: 1,
+    width: '100%',
+  },
   filterContainer: {
+    width: '100%',
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 10,
+    paddingHorizontal: width * 0.04,
+    paddingVertical: height * 0.02,
     backgroundColor: 'rgba(255, 255, 255, 0.1)',
   },
-  input: {
+  filterButtonContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
     flex: 1,
-    marginRight: 10,
-    backgroundColor: '#fff',
+    marginRight: 8,
+  },
+  filterButton: {
+    flex: 1,
+    marginRight: 8,
+    backgroundColor: '#192f6a',
+  },
+  buttonLabel: {
+    fontSize: Math.min(width * 0.035, 14),
+    paddingHorizontal: 4,
+  },
+  clearButton: {
+    marginRight: 8,
   },
   chip: {
-    backgroundColor:"#fff"
+    backgroundColor: '#fff',
+    height: 32,
+  },
+  chipLabel: {
+    fontSize: Math.min(width * 0.035, 14),
+  },
+  modalContent: {
+    backgroundColor: 'white',
+    margin: width * 0.05,
+    padding: 16,
+    borderRadius: 8,
+    maxHeight: height * 0.7,
+    width: width * 0.9,
+    alignSelf: 'center',
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#192f6a',
+  },
+  modalScroll: {
+    maxHeight: height * 0.6,
+  },
+  modalScrollContent: {
+    paddingVertical: 8,
+  },
+  locationItem: {
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+    paddingVertical: 12,
+  },
+  locationText: {
+    fontSize: Math.min(width * 0.04, 16),
+    color: '#192f6a',
   },
   scrollViewContent: {
     flexGrow: 1,
-    justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 20,
+    paddingVertical: height * 0.02,
+    paddingHorizontal: width * 0.04,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    minHeight: height * 0.3,
   },
   loadingText: {
     marginTop: 10,
-    fontSize: 18,
+    fontSize: Math.min(width * 0.045, 18),
     color: '#ffffff',
     fontWeight: 'bold',
   },

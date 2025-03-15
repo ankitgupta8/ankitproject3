@@ -12,10 +12,11 @@ interface TodoItemInterface {
   specificLocation: string;
   class: string;
   subject: string;
-  hoursToTeach: number;
+  hoursToTeach: string;
   salary: string;
-  phoneNumber: number;
+  phoneNumber: string;
   ownerId: string;
+  photoURL?: string;
   timestamp: number;
 }
 interface TodoItemInterfaceTeacher {

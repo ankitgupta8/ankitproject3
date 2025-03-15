@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, Dimensions, Linking } from 'react-native';
+import { View, Text, StyleSheet, Dimensions, Linking, Image } from 'react-native';
 import { Card, Title, Paragraph } from 'react-native-paper';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -7,7 +7,7 @@ import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-na
 
 const { width } = Dimensions.get('window');
 
-const TutorCard = ({ grade, hoursToTeach, location, salary, name, subject, phoneNumber }) => {
+const TutorCard = ({ grade, hoursToTeach, location, salary, name, subject, phoneNumber, photoURL }) => {
   const scale = useSharedValue(1);
   console.log(phoneNumber)
   const animatedStyles = useAnimatedStyle(() => {
@@ -34,19 +34,20 @@ const TutorCard = ({ grade, hoursToTeach, location, salary, name, subject, phone
           colors={['rgba(255,255,255,0.8)', 'rgba(255,255,255,0.6)']}
           style={styles.cardContent}
         >
-          <View style={{flexDirection:'row', justifyContent:'space-between'}}>
-
-          <View style={styles.header}>
-            <Ionicons name="person-circle-outline" size={40} color="#4c669f" />
-            <Title style={styles.name}>{name}</Title>
-
-          </View>
-          <DetailItem3 icon="call" text={`${phoneNumber}`} />
+          <View style={styles.contentWrapper}>
+            <View style={styles.header}>
+              {photoURL ? (
+                <Image source={{ uri: photoURL }} style={styles.profilePhoto} />
+              ) : (
+                <Ionicons name="person-circle-outline" size={40} color="#4c669f" />
+              )}
+              <Title style={styles.name}>{name}</Title>
+            </View>
+            <DetailItem2 icon="call" text={`${phoneNumber}`} />
           </View>
 
           <View style={{flexDirection: 'row', marginTop:10}}>
-
-          <DetailItem2 icon="book" text={`${subject}`} />
+            <DetailItem2 icon="book" text={`${subject}`} />
           </View>
           <View style={styles.detailsContainer}>
             <DetailItem icon="school-outline" text={`Grade ${grade}`} />
@@ -70,12 +71,6 @@ const DetailItem2 = ({ icon, text }) => (
   <View style={styles.detailItem}>
     <Ionicons name={icon} size={22} color="#4c669f" style={styles.icon} />
     <Text style={styles.detailText3}>{text}</Text>
-  </View>
-);
-const DetailItem3 = ({ icon, text }) => (
-  <View style={styles.detailItem2}>
-    <Ionicons name={icon} size={28} color="#4c669f" style={styles.icon} />
-    <Text style={styles.detailText2}>{text}</Text>
   </View>
 );
 
@@ -144,6 +139,12 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
 
     color: '#4c669f',
+  },
+  profilePhoto: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    marginRight: 10,
   },
 });
 

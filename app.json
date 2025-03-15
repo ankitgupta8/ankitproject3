@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "ankitproject",
-    "slug": "ankitproject",
+    "name": "ankitproject2",
+    "slug": "ankitproject2",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -29,22 +29,17 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-system-ui",
-      "expo-updates"
+      "expo-system-ui"
     ],
     "updates": {
-      "enabled": true,
-      "fallbackToCacheTimeout": 0,
-      "url": "https://u.expo.dev/204352de-55c7-4155-bf20-80a75a263acd"
-    },
-    "runtimeVersion": {
-      "policy": "sdkVersion"
+      "enabled": false
     },
     "extra": {
       "eas": {
         "projectId": "204352de-55c7-4155-bf20-80a75a263acd"
       }
-    }
+    },
+    "newArchEnabled": true
   }
 }
 

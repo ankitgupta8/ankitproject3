@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, Dimensions, Alert } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
@@ -7,6 +7,8 @@ import { Searchbar, Button } from 'react-native-paper';
 import { getAuth, signOut } from "firebase/auth";
 import Animated, { useAnimatedStyle, withTiming, useSharedValue } from 'react-native-reanimated';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { Ionicons } from '@expo/vector-icons';
+import { TouchableOpacity } from 'react-native-gesture-handler';
 
 // Import your existing screens
 import SignUpScreen from './signUpScreen';
@@ -19,9 +21,8 @@ import TeacherRequest from './teacherRequests';
 import TeacherRegisterScreen from './teacherRegisterScreen';
 import LandingPage from './initApp';
 import ChooseRoleScreen from './ChooseRoleScreen.js';
-import { Directions, TouchableOpacity } from 'react-native-gesture-handler';
+import { auth } from './firebase';
 
-const auth = getAuth();
 const Stack = createStackNavigator();
 const Tab = createMaterialTopTabNavigator();
 
@@ -152,7 +153,7 @@ function TabBar({ state, descriptors, navigation }) {
   );
 }
 
-function StudentTabScreen() {
+function StudentTabScreen({ navigation }) {
   return (
     <Tab.Navigator tabBar={props => <TabBar {...props} />}>
       <Tab.Screen 
@@ -179,7 +180,7 @@ function StudentTabScreen() {
   );
 }
 
-function TeacherTabScreen() {
+function TeacherTabScreen({ navigation }) {
   return (
     <Tab.Navigator tabBar={props => <TabBar {...props} />}>
       <Tab.Screen 
@@ -205,6 +206,15 @@ function TeacherTabScreen() {
     </Tab.Navigator>
   );
 }
+const handleSignOut = async (navigation) => {
+  try {
+    await signOut(auth);
+    console.log('Signed out successfully');
+    navigation.navigate('LandingPage');
+  } catch (error) {
+    console.error('Error signing out:', error);
+  }
+};
 
 function App() {
   return (
@@ -230,24 +240,42 @@ function App() {
         <Stack.Screen 
           name="StudentDashboard" 
           component={StudentTabScreen}  
-          options={{
+          options={({navigation}) => ({
             headerShown: true,
             headerTitle: 'Student Dashboard',
             headerStyle: styles.header,
             headerTintColor: '#fff',
             headerTitleStyle: styles.headerTitle,
-          }}
+            headerLeft: ()=> null,
+
+            headerRight: () => (
+              <TouchableOpacity
+                onPress={() => handleSignOut(navigation)}
+                style={{ marginRight: 15 }}
+              >
+                <Ionicons name="log-out-outline" size={24} color="#fff" />
+              </TouchableOpacity>
+            ),
+          })}
         />
         <Stack.Screen 
           name="TeacherDashboard" 
           component={TeacherTabScreen}  
-          options={{
+          options={({navigation}) => ({
             headerShown: true,
             headerTitle: 'Teacher Dashboard',
             headerStyle: styles.header,
             headerTintColor: '#fff',
             headerTitleStyle: styles.headerTitle,
-          }}
+            headerRight: () => (
+              <TouchableOpacity
+                onPress={() => navigation.getParent()?.getParent()?.getParent()?.navigate('LandingPage')}
+                style={{ marginRight: 15 }}
+              >
+                <Ionicons name="log-out-outline" size={24} color="#fff" />
+              </TouchableOpacity>
+            ),
+          })}
         />
       </Stack.Navigator>
     </NavigationContainer>
@@ -270,8 +298,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#4c669f',
   },
   headerTitle: {
-    color: '#ffffff',
-    fontSize: 20,
+    color: '#fff',
     fontWeight: 'bold',
   },
   tabBar: {
@@ -301,7 +328,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 0,
     height: 3,
-    width: width / 5,
+    width: width / 10,
     backgroundColor: '#4c669f',
   },
 });

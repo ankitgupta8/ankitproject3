@@ -6,7 +6,8 @@ import {
   StyleSheet, 
   Dimensions, 
   Animated, 
-  RefreshControl 
+  RefreshControl,
+  Alert
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -120,6 +121,9 @@ const styles = StyleSheet.create({
     paddingTop: 40,
     paddingBottom: 20,
     alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    paddingHorizontal: 20,
   },
   headerText: {
     fontSize: 28,
