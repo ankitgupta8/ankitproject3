@@ -103,9 +103,7 @@ workflows:
       - name: Install compatible expo-system-ui version
         script: |
           npm install expo-system-ui@3.0.0
-      - name: Clear Metro Bundler Cache
-        script: |
-          npx expo start --clear
+
       - name: Validate Metro Configuration
         script: |
           if [ ! -f metro.config.js ]; then
