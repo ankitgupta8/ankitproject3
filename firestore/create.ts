@@ -8,6 +8,7 @@ import app from '../firebase';
 
 interface TodoItemInterface {
   name: string;
+  province: string;
   district: string;
   specificLocation: string;
   class: string;
@@ -21,11 +22,28 @@ interface TodoItemInterface {
 }
 interface TodoItemInterfaceTeacher {
   name: string;
-  location: string;
+  province: string;
+  district: string;
+  specificLocation: string;
   experience: string;
   subject: string;
   phoneNumber: number;
   ownerId: string;
+}
+
+interface StudentProfile {
+  name: string;
+  grade: string;
+  subject: string;
+  phoneNumber: string;
+  photoURL: string;
+  province: string;
+  district: string;
+  specificLocation: string;
+  salary: string;
+  teachingHours: string;
+  userId: string;
+  createdAt: Date;
 }
 
 const db = getFirestore(app);
@@ -49,6 +67,7 @@ export async function createTodoTaskTeacher(data: TodoItemInterfaceTeacher) {
     completedAt: '',
     ...data,
   };
-  console.log(dbData)
+  console.log(dbData, 'function createTodoTaskTeacher dbData')
+  console.log(data, 'function createTodoTaskTeacher data')
   return await addDoc(teachersCollection, dbData);
 }

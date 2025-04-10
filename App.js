@@ -1,5 +1,20 @@
-import React from 'react';
-import { View, Text, StyleSheet, Dimensions, Alert } from 'react-native';
+/**
+ * App.js - Main Application Component
+ * 
+ * This is the root component of the application that sets up the navigation structure
+ * and manages the overall app flow. It includes:
+ * - Authentication flow (Sign In, Sign Up, Role Selection)
+ * - Student and Teacher specific navigation stacks
+ * - Tab navigation for both student and teacher interfaces
+ * - Custom header and tab bar components
+ * - Theme configuration and navigation linking
+ * 
+ * The app uses React Navigation with Stack and Tab navigators to manage
+ * different user flows for students and teachers.
+ */
+
+import React, { useContext } from 'react';
+import { View, Text, StyleSheet, Dimensions, Alert, StatusBar, ActivityIndicator } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
@@ -9,19 +24,29 @@ import Animated, { useAnimatedStyle, withTiming, useSharedValue } from 'react-na
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { Ionicons } from '@expo/vector-icons';
 import { TouchableOpacity } from 'react-native-gesture-handler';
+import { AuthContext } from './context/AuthContext';
+
+// Import theme and custom components
+import theme from './theme';
+import CustomTabBar from './components/CustomTabBar';
+import CustomHeader from './components/CustomHeader';
+import { Button as CustomButton } from './components/UIComponents';
 
 // Import your existing screens
-import SignUpScreen from './signUpScreen';
-import StudentRegisterScreen from './studentRegisterScreen.js';
-import SignInScreen from './signinscreen.js';
-import DashBoard from './DashBoard';
-import StudentsRequest from './studentRequests';
-import DashBoard2 from './Dashboard2';
-import TeacherRequest from './teacherRequests';
-import TeacherRegisterScreen from './teacherRegisterScreen';
+import SignUpScreen from './screens/auth/signUpScreen';
+import StudentRegisterScreen from './screens/student/studentRegister/StudentRegisterScreen';
+import SignInScreen from './screens/auth/signinscreen.js';
+import StudentDashboard from './screens/student/studentProfile/StudentDashboard';
+import StudentsRequest from './screens/student/studentList/studentRequests';
+import TeacherDashboard from './screens/teacher/teacherProfile/TeacherDashboard';
+import TeacherRequest from './screens/teacher/teacherList/teacherRequests';
+import TeacherRegisterScreen from './screens/teacher/teacherRegister/TeacherRegisterScreen';
 import LandingPage from './initApp';
-import ChooseRoleScreen from './ChooseRoleScreen.js';
+import ChooseRoleScreen from './screens/role/ChooseRoleScreen.js';
 import { auth } from './firebase';
+import StudentDetailsScreen from './screens/student/studentList/StudentDetailsScreen';
+import TeacherDetailsScreen from './screens/teacher/teacherList/TeacherDetailsScreen';
+import { AuthProvider } from './context/AuthContext';
 
 const Stack = createStackNavigator();
 const Tab = createMaterialTopTabNavigator();
@@ -39,9 +64,9 @@ function SearchTutorScreen({ navigation }) {
         onChangeText={text => setSearchQuery(text)}
         style={styles.searchBar}
       />
-      <Button mode="contained" onPress={() => navigation.navigate('TutorResults')} style={styles.button}>
+      <CustomButton mode="contained" onPress={() => navigation.navigate('TutorResults')} style={styles.button}>
         Search
-      </Button>
+      </CustomButton>
     </View>
   );
 }
@@ -56,37 +81,22 @@ const config = {
     restSpeedThreshold: 0.01,
   },
 };
-function StudentScreen() {
-  const config = {
-    animation: 'spring',
-    config: {
-      stiffness: 1000,
-      damping: 500,
-      mass: 3,
-      overshootClamping: true,
-      restDisplacementThreshold: 0.01,
-      restSpeedThreshold: 0.01,
-    },
-  };
+function StudentScreen({ navigation }) {
   return (
     <Stack.Navigator>
-      <Stack.Screen name="dashboard" component={DashBoard} options={{headerShown: false}} />
-      <Stack.Screen name="Sregistration" component={StudentRegisterScreen} options={{
-        headerShown: false,
-        transitionSpec: {
-          open: config,
-          close: config,
-        },
-        }} />
+      <Stack.Screen name="StudentDashboard" component={StudentDashboard} options={{headerShown: false}} />
+      <Stack.Screen name="Sregistration" component={StudentRegisterScreen} options={{headerShown: false}} />
+      <Stack.Screen name="StudentDetails" component={StudentDetailsScreen} options={{headerShown: false}} />
     </Stack.Navigator>
   );
 }
 
-function TeacherScreen() {
+function TeacherScreen({ navigation }) {
   return (
     <Stack.Navigator>
-      <Stack.Screen name="dashboard2" component={DashBoard2} options={{headerShown: false}} />
+      <Stack.Screen name="TeacherDashboard" component={TeacherDashboard} options={{headerShown: false}} />
       <Stack.Screen name="Tregistration" component={TeacherRegisterScreen} options={{headerShown: false}} />
+      <Stack.Screen name="TeacherDetails" component={TeacherDetailsScreen} options={{headerShown: false}} />
     </Stack.Navigator>
   );
 }
@@ -153,16 +163,34 @@ function TabBar({ state, descriptors, navigation }) {
   );
 }
 
+function TeacherRequestStack() {
+  return (
+    <Stack.Navigator>
+      <Stack.Screen name="TeacherRequestList" component={TeacherRequest} options={{headerShown: false}} />
+      <Stack.Screen name="TeacherDetails" component={TeacherDetailsScreen} options={{headerShown: false}} />
+    </Stack.Navigator>
+  );
+}
+
+function StudentsRequestStack() {
+  return (
+    <Stack.Navigator>
+      <Stack.Screen name="StudentsRequestList" component={StudentsRequest} options={{headerShown: false}} />
+      <Stack.Screen name="StudentDetails" component={StudentDetailsScreen} options={{headerShown: false}} />
+    </Stack.Navigator>
+  );
+}
+
 function StudentTabScreen({ navigation }) {
   return (
-    <Tab.Navigator tabBar={props => <TabBar {...props} />}>
+    <Tab.Navigator tabBar={props => <CustomTabBar {...props} />}>
       <Tab.Screen 
         name="TeacherRequest" 
-        component={TeacherRequest} 
+        component={TeacherRequestStack} 
         options={{
           tabBarLabel: 'Find Teacher',
           tabBarIcon: ({ focused, color, size }) => (
-            <Icon name="account-search" color={color} size={size} />
+            <Ionicons name="search" color={color} size={size} />
           ),
         }}
       />
@@ -172,7 +200,7 @@ function StudentTabScreen({ navigation }) {
         options={{
           tabBarLabel: 'Profile',
           tabBarIcon: ({ focused, color, size }) => (
-            <Icon name="account" color={color} size={size} />
+            <Ionicons name="person" color={color} size={size} />
           ),
         }}
       />
@@ -182,14 +210,14 @@ function StudentTabScreen({ navigation }) {
 
 function TeacherTabScreen({ navigation }) {
   return (
-    <Tab.Navigator tabBar={props => <TabBar {...props} />}>
+    <Tab.Navigator tabBar={props => <CustomTabBar {...props} />}>
       <Tab.Screen 
         name="StudentsRequest" 
-        component={StudentsRequest} 
+        component={StudentsRequestStack} 
         options={{
           tabBarLabel: 'Find Students',
           tabBarIcon: ({ focused, color, size }) => (
-            <Icon name="account-search" color={color} size={size} />
+            <Ionicons name="search" color={color} size={size} />
           ),
         }}
       />
@@ -199,86 +227,185 @@ function TeacherTabScreen({ navigation }) {
         options={{
           tabBarLabel: 'Profile',
           tabBarIcon: ({ focused, color, size }) => (
-            <Icon name="account" color={color} size={size} />
+            <Ionicons name="person" color={color} size={size} />
           ),
         }}
       />
     </Tab.Navigator>
   );
 }
-const handleSignOut = async (navigation) => {
-  try {
-    await signOut(auth);
-    console.log('Signed out successfully');
-    navigation.navigate('LandingPage');
-  } catch (error) {
-    console.error('Error signing out:', error);
+
+const AppContent = () => {
+  const { user, loading, signOut } = useContext(AuthContext);
+
+  const handleSignOut = async (navigation) => {
+    try {
+      await signOut();
+      console.log('Signed out successfully');
+      navigation.navigate('LandingPage');
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
+  };
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={theme.colors.primary} />
+      </View>
+    );
   }
+
+  return (
+    <NavigationContainer
+      theme={{
+        dark: false,
+        colors: {
+          primary: theme.colors.primary,
+          background: theme.colors.background,
+          card: theme.colors.background,
+          text: theme.colors.textPrimary,
+          border: theme.colors.border,
+          notification: theme.colors.primary,
+        },
+      }}
+    >
+      <StatusBar
+        backgroundColor="transparent"
+        barStyle="dark-content"
+        translucent
+      />
+      <Stack.Navigator 
+        initialRouteName={user ? (user.displayName?.includes('Teacher') ? 'TeacherDashboard' : 'StudentDashboard') : 'LandingPage'}
+      >
+        {user ? (
+          // User is signed in
+          user.displayName?.includes('Teacher') ? (
+            <>
+              <Stack.Screen 
+                name="TeacherDashboard" 
+                component={TeacherTabScreen}
+                options={({navigation}) => ({
+                  header: (props) => (
+                    <CustomHeader
+                      title="Teacher Dashboard"
+                      rightIcon="log-out"
+                      preventBack={true}
+                      showBackButton={false}
+                      showTitle={false}
+                      onRightPress={() => {
+                        Alert.alert(
+                          'Sign Out',
+                          'Are you sure you want to sign out?',
+                          [
+                            {
+                              text: 'Cancel',
+                              style: 'cancel',
+                            },
+                            {
+                              text: 'Sign Out',
+                              onPress: () => handleSignOut(navigation),
+                              style: 'destructive',
+                            },
+                          ]
+                        );
+                      }}
+                    />
+                  ),
+                })}
+              />
+              <Stack.Screen 
+                name="TeacherDetails" 
+                component={TeacherDetailsScreen}
+                options={{ headerShown: false }}
+              />
+              <Stack.Screen 
+                name="Tregistration" 
+                component={TeacherRegisterScreen}
+                options={{ headerShown: false }}
+              />
+            </>
+          ) : (
+            <>
+              <Stack.Screen 
+                name="StudentDashboard" 
+                component={StudentTabScreen}
+                options={({navigation}) => ({
+                  header: (props) => (
+                    <CustomHeader
+                      title="Student Dashboard"
+                      rightIcon="log-out"
+                      preventBack={true}
+                      showBackButton={false}
+                      showTitle={false}
+                      onRightPress={() => {
+                        Alert.alert(
+                          'Sign Out',
+                          'Are you sure you want to sign out?',
+                          [
+                            {
+                              text: 'Cancel',
+                              style: 'cancel',
+                            },
+                            {
+                              text: 'Sign Out',
+                              onPress: () => handleSignOut(navigation),
+                              style: 'destructive',
+                            },
+                          ]
+                        );
+                      }}
+                    />
+                  ),
+                })}
+              />
+              <Stack.Screen 
+                name="StudentDetails" 
+                component={StudentDetailsScreen}
+                options={{ headerShown: false }}
+              />
+              <Stack.Screen 
+                name="Sregistration" 
+                component={StudentRegisterScreen}
+                options={{ headerShown: false }}
+              />
+            </>
+          )
+        ) : (
+          // User is not signed in
+          <>
+            <Stack.Screen 
+              name="LandingPage" 
+              component={LandingPage}
+              options={{ headerShown: false }}
+            />
+            <Stack.Screen 
+              name="SignIn" 
+              component={SignInScreen}
+              options={{ headerShown: false }}
+            />
+            <Stack.Screen 
+              name="Register" 
+              component={SignUpScreen}
+              options={{ headerShown: false }}
+            />
+            <Stack.Screen 
+              name="ChooseRole" 
+              component={ChooseRoleScreen}
+              options={{ headerShown: false }}
+            />
+          </>
+        )}
+      </Stack.Navigator>
+    </NavigationContainer>
+  );
 };
 
 function App() {
   return (
-    <NavigationContainer>
-      <Stack.Navigator initialRouteName="LandingPage">
-        <Stack.Screen name="LandingPage" component={LandingPage} options={{headerShown: false}} />
-        <Stack.Screen name="SignIn" component={SignInScreen} options={{headerShown: false}}/>
-        <Stack.Screen name="Register" component={SignUpScreen} options={{headerShown: false}}/>
-        <Stack.Screen 
-          name="ChooseRole" 
-          component={ChooseRoleScreen} 
-          options={({navigation}) => ({
-            headerShown: false, 
-            headerLeft: () => (
-              <Button 
-                icon="arrow-left" 
-                onPress={() => navigation.navigate('LandingPage')}
-                color="#4c669f"
-              />
-            )
-          })} 
-        />
-        <Stack.Screen 
-          name="StudentDashboard" 
-          component={StudentTabScreen}  
-          options={({navigation}) => ({
-            headerShown: true,
-            headerTitle: 'Student Dashboard',
-            headerStyle: styles.header,
-            headerTintColor: '#fff',
-            headerTitleStyle: styles.headerTitle,
-            headerLeft: ()=> null,
-
-            headerRight: () => (
-              <TouchableOpacity
-                onPress={() => handleSignOut(navigation)}
-                style={{ marginRight: 15 }}
-              >
-                <Ionicons name="log-out-outline" size={24} color="#fff" />
-              </TouchableOpacity>
-            ),
-          })}
-        />
-        <Stack.Screen 
-          name="TeacherDashboard" 
-          component={TeacherTabScreen}  
-          options={({navigation}) => ({
-            headerShown: true,
-            headerTitle: 'Teacher Dashboard',
-            headerStyle: styles.header,
-            headerTintColor: '#fff',
-            headerTitleStyle: styles.headerTitle,
-            headerRight: () => (
-              <TouchableOpacity
-                onPress={() => navigation.getParent()?.getParent()?.getParent()?.navigate('LandingPage')}
-                style={{ marginRight: 15 }}
-              >
-                <Ionicons name="log-out-outline" size={24} color="#fff" />
-              </TouchableOpacity>
-            ),
-          })}
-        />
-      </Stack.Navigator>
-    </NavigationContainer>
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   );
 }
 
@@ -328,8 +455,14 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 0,
     height: 3,
-    width: width / 10,
+    width: '20%',
     backgroundColor: '#4c669f',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: theme.colors.background,
   },
 });
 

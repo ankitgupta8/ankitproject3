@@ -14,12 +14,12 @@ import { ActivityIndicator, Portal, Modal, Provider as PaperProvider } from 'rea
 import { ScrollView } from 'react-native-gesture-handler';
 import { Ionicons } from '@expo/vector-icons';
 import { createStackNavigator } from '@react-navigation/stack';
-import { auth } from './firebase';
-import { fetchWholeTodoListTeacher } from './firestore/read';
-import TeacherCard from './components/TeacherCard';
-import TeacherDetailsScreen from './screens/teacher/teacherList/TeacherDetailsScreen';
-import theme from './theme';
-import { Button, Badge, Heading, Card } from './components/UIComponents';
+import { auth } from '../../../firebase';
+import { fetchWholeTodoListTeacher } from '../../../firestore/read';
+import TeacherCard from '../../../components/TeacherCard';
+import TeacherDetailsScreen from './TeacherDetailsScreen';
+import theme from '../../../theme';
+import { Button, Badge, Heading, Card } from '../../../components/UIComponents';
 
 const { width, height } = Dimensions.get('window');
 const Stack = createStackNavigator();
@@ -158,7 +158,7 @@ const TeacherListScreen = ({ navigation }) => {
               title={district || "All Locations"}
               icon="location"
               onPress={() => setShowLocationModal(true)}
-              variant={district ? "primary" : "outline"}
+              variant={district ? "primary" : "secondary"}
               size="small"
               style={styles.locationButton}
             />
@@ -167,7 +167,7 @@ const TeacherListScreen = ({ navigation }) => {
               title={sortNewest ? "Newest First" : "Default Sort"}
               icon={sortNewest ? "time" : "swap-vertical"}
               onPress={toggleSort}
-              variant="outline"
+              variant="primary"
               size="small"
               style={styles.sortButton}
             />
@@ -259,7 +259,7 @@ const TeacherListScreen = ({ navigation }) => {
                   <Badge 
                     text={district} 
                     icon="location" 
-                    color="primary" 
+                    color="success" 
                     style={styles.filterBadge}
                   />
                 )}
@@ -360,29 +360,35 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   headerContainer: {
-    paddingTop: 20,
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    paddingTop: 5,
     paddingHorizontal: theme.spacing.md,
-    paddingBottom: theme.spacing.md,
+    paddingBottom: 10,
     zIndex: 10,
+    backgroundColor: `${theme.colors.primary}10`,
   },
   heading: {
-    marginBottom: theme.spacing.sm,
+    marginBottom: 5,
     textAlign: 'center',
   },
   filterContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: theme.spacing.sm,
+    marginTop: 0,
   },
   locationButton: {
     flex: 1,
     marginRight: theme.spacing.sm,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
   },
   sortButton: {
     flex: 1,
   },
   scrollViewContent: {
-    paddingTop: 120, // Space for the header
+    paddingTop: 70,
   },
   activeFiltersContainer: {
     marginHorizontal: theme.spacing.md,
@@ -409,6 +415,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: theme.spacing.xl,
+
   },
   loadingText: {
     color: '#ffffff',
