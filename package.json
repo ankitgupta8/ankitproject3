@@ -1,64 +1,163 @@
-{
-  "name": "ankitproject",
-  "version": "1.0.0",
-    "engines": {
-    "npm": ">=8.0.0 <=8.5.5"
-  },
-  "scripts": {
-    "start": "expo start --dev-client",
-    "android": "expo run:android",
-    "ios": "expo run:ios",
-    "web": "expo start --web",
-    "build:android": "eas build --platform android --profile preview",
-    "prebuild": "rm -rf node_modules && yarn install",
-    "postinstall": "npx expo install"
-  },
-  "dependencies": {
-    "@cloudinary/url-gen": "^1.21.0",
-    "@expo/config": "^10.0.11",
-    "@expo/metro-config": "^0.19.12",
-    "@react-native-async-storage/async-storage": "^1.24.0",
-    "@react-native-firebase/app": "^21.6.1",
-    "@react-native-firebase/firestore": "^21.6.1",
-    "@react-native-picker/picker": "2.9.0",
-    "@react-navigation/bottom-tabs": "^7.2.0",
-    "@react-navigation/material-top-tabs": "^7.1.0",
-    "@react-navigation/native": "^7.0.14",
-    "@react-navigation/native-stack": "^7.2.0",
-    "@react-navigation/stack": "^7.1.0",
-    "@types/react": "~18.3.12",
-    "cloudinary": "^2.6.0",
-    "cloudinary-react-native": "^1.0.0",
-    "expo": "~52.0.38",
-    "expo-image-picker": "^16.0.6",
-    "expo-linear-gradient": "~14.0.2",
-    "expo-status-bar": "~2.0.1",
-    "expo-system-ui": "~4.0.8",
-    "firebase": "^11.1.0",
-    "lottie-react-native": "7.1.0",
-    "react": "18.3.1",
-    "react-native": "^0.76.7",
-    "react-native-dropdown-picker": "^5.4.6",
-    "react-native-gesture-handler": "~2.20.2",
-    "react-native-keyboard-aware-scroll-view": "^0.9.5",
-    "react-native-pager-view": "6.5.1",
-    "react-native-paper": "^5.12.5",
-    "react-native-picker-select": "^9.3.1",
-    "react-native-reanimated": "~3.16.1",
-    "react-native-safe-area-context": "4.12.0",
-    "react-native-screens": "~4.4.0",
-    "react-native-tab-view": "^4.0.5",
-    "typescript": "^5.3.3"
-  },
-  "devDependencies": {
-    "@babel/core": "^7.25.2",
-    "@react-native-community/cli": "^15.1.3",
-    "@types/react-native": "^0.73.0"
-  },
-  "private": true,
-  "resolutions": {
-    "@expo/config-plugins": "~6.0.0",
-    "@expo/prebuild-config": "~6.0.0",
-    "expo-modules-autolinking": "~1.1.0"
-  }
-}
+workflows:
+  react-native-android:
+    name: React Native Android
+    max_build_duration: 120
+    instance_type: mac_mini_m2
+    environment:
+      vars:
+        PACKAGE_NAME: "com.guptaankit9.ankitproject"
+    scripts:
+      - name: Install npm dependencies
+        script: |
+          npm install expo-cli@6.3.0
+          npm install
+      - name: Install sharp-cli globally
+        script: |
+          npm install -g sharp-cli
+      - name: Install compatible expo-system-ui version
+        script: |
+          npm install expo-system-ui@3.0.0
+      - name: Clear Metro Bundler Cache
+        script: |
+          npx react-native-community/cli start --reset-cache --no-interactive || true
+          # Alternative approach
+          rm -rf $HOME/.npm/_cacache
+          rm -rf $TMPDIR/metro-*
+          rm -rf $TMPDIR/haste-map-*
+      - name: Validate Metro Configuration
+        script: |
+          if [ ! -f metro.config.js ]; then
+            echo "module.exports = require('@expo/metro-config').getDefaultConfig(__dirname);" > metro.config.js
+          fi
+      - name: Validate Expo project setup
+        script: |
+          npx expo doctor || true
+      - name: Create Improved SDK Version Patch
+        script: |
+          # Create an improved helper file to apply compileSdkVersion to all modules using beforeEvaluate
+          cat > "$CM_BUILD_DIR/sdk_version_patch.gradle" << 'EOL'
+          // build.gradle root file patch
+          subprojects { project ->
+              project.beforeEvaluate {
+                  if (project.hasProperty("android") || project.plugins.hasPlugin('com.android.library') || project.plugins.hasPlugin('com.android.application')) {
+                      project.extensions.findByName('android')?.with { android ->
+                          if (!android.hasProperty("compileSdkVersion")) {
+                              compileSdkVersion 33
+                          }
+                          if (!android.hasProperty("targetSdkVersion") && android.hasProperty("defaultConfig")) {
+                              defaultConfig {
+                                  targetSdkVersion 33
+                              }
+                          }
+                      }
+                  }
+              }
+          }
+          EOL
+      - name: Patch Expo Gradle Files
+        script: |
+          # Fix for the ExpoModulesCorePlugin.gradle
+          EXPO_CORE_PLUGIN_FILE="$CM_BUILD_DIR/node_modules/expo-modules-core/android/ExpoModulesCorePlugin.gradle"
+          
+          if [ -f "$EXPO_CORE_PLUGIN_FILE" ]; then
+            # Create backup
+            cp "$EXPO_CORE_PLUGIN_FILE" "${EXPO_CORE_PLUGIN_FILE}.backup"
+            
+            # Replace the problematic line with a safer approach that checks if components has a 'release' component
+            sed -i '' 's/components.release/components.findByName("release") ?: components.first()/g' "$EXPO_CORE_PLUGIN_FILE"
+            
+            echo "Patched ExpoModulesCorePlugin.gradle"
+          else
+            echo "Warning: Could not find ExpoModulesCorePlugin.gradle file"
+          fi
+          
+          # Also check and patch other gradle files
+          for FILE in $(find "$CM_BUILD_DIR/node_modules" -name "*.gradle" -type f -exec grep -l "components.release" {} \;); do
+            cp "$FILE" "${FILE}.backup"
+            sed -i '' 's/components.release/components.findByName("release") ?: components.first()/g' "$FILE"
+            echo "Patched $FILE"
+          done
+      - name: Run Expo Prebuild
+        script: |
+          npx expo prebuild
+      - name: Add modular_headers to iOS Podfile
+        script: |
+          if [ -f "ios/Podfile" ]; then
+            # Add use_modular_headers! to the Podfile if it doesn't already exist
+            if ! grep -q "use_modular_headers!" "ios/Podfile"; then
+              sed -i '' '1,/platform :ios/s/platform :ios.*/&\nuse_modular_headers!/' "ios/Podfile"
+              echo "Added use_modular_headers! to Podfile"
+            else
+              echo "use_modular_headers! already exists in Podfile, skipping"
+            fi
+          else
+            echo "No Podfile found in ios directory, skipping"
+          fi
+      - name: Set Android SDK location
+        script: |
+          echo "sdk.dir=$ANDROID_SDK_ROOT" > "$CM_BUILD_DIR/android/local.properties"
+      - name: Apply Gradle Patches to Generated Files
+        script: |
+          # Apply patches to settings.gradle
+          SETTINGS_GRADLE="$CM_BUILD_DIR/android/settings.gradle"
+          
+          if [ -f "$SETTINGS_GRADLE" ]; then
+            # Check if pluginManagement already exists
+            if ! grep -q "pluginManagement" "$SETTINGS_GRADLE"; then
+              echo "
+              pluginManagement {
+                  repositories {
+                      google()
+                      mavenCentral()
+                      gradlePluginPortal()
+                  }
+              }
+              " > "$SETTINGS_GRADLE.new"
+              cat "$SETTINGS_GRADLE" >> "$SETTINGS_GRADLE.new"
+              mv "$SETTINGS_GRADLE.new" "$SETTINGS_GRADLE"
+              echo "Added pluginManagement block to settings.gradle"
+            else
+              echo "pluginManagement block already exists in settings.gradle, skipping addition"
+            fi
+            
+            # Add our SDK version patch to settings.gradle 
+            # Apply early in the build process before evaluation
+            if ! grep -q "sdk_version_patch.gradle" "$SETTINGS_GRADLE"; then
+              echo "
+              // Apply SDK version patch before project evaluation
+              apply from: new File(settingsDir, '../sdk_version_patch.gradle')
+              " >> "$SETTINGS_GRADLE"
+              echo "Added sdk_version_patch.gradle reference to settings.gradle"
+            else
+              echo "sdk_version_patch.gradle already referenced in settings.gradle, skipping"
+            fi
+          fi
+          
+          # Make sure each module has compileSdkVersion
+          for GRADLE_FILE in $(find "$CM_BUILD_DIR/android" -name "build.gradle"); do
+            if grep -q "android {" "$GRADLE_FILE" && ! grep -q "compileSdkVersion" "$GRADLE_FILE"; then
+              sed -i '' '/android {/a\\
+              compileSdkVersion 33' "$GRADLE_FILE"
+              echo "Added compileSdkVersion to $GRADLE_FILE"
+            fi
+          done
+          
+          # Downgrade Gradle if necessary
+          sed -i '' 's/gradle-[0-9]\.[0-9]\.[0-9]/gradle-7.3.3/g' "$CM_BUILD_DIR/android/gradle/wrapper/gradle-wrapper.properties"
+      - name: Build Android release
+        script: |
+          cd android
+          # Clean first
+          ./gradlew clean
+          # Then build with detailed logs
+          ./gradlew assembleRelease --stacktrace
+    artifacts:
+      - android/app/build/outputs/**/*.apk
+    publishing:
+      email:
+        recipients:
+          - user_1@example.com
+          - user_2@example.com
+        notify:
+          success: true
+          failure: false
